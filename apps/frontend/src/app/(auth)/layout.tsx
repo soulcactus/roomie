@@ -1,15 +1,13 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { hasValidSession } from '@/lib/auth/session-server';
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
-  const hasAccessToken = Boolean(cookieStore.get('access_token')?.value);
-
-  if (hasAccessToken) {
+  const isAuthenticated = await hasValidSession();
+  if (isAuthenticated) {
     redirect('/dashboard');
   }
 
