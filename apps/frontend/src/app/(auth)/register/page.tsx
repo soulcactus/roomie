@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { CircleAlert } from 'lucide-react';
 import {
   AuthCard,
-  evaluatePasswordPolicy,
   FormError,
   FormField,
-  PasswordStrengthGuide,
 } from '@/components/patterns';
 import { useRegister } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -19,22 +18,18 @@ const registerSchema = z
       .string()
       .min(1, '이메일을 입력해 주세요.')
       .email('올바른 이메일 형식을 입력해 주세요.'),
-    name: z.string().min(1, '이름을 입력해 주세요.'),
-    password: z.string().min(1, '비밀번호를 입력해 주세요.'),
+    name: z
+      .string()
+      .min(1, '이름을 입력해 주세요.')
+      .min(2, '이름은 최소 2자 이상 입력해 주세요.'),
+    password: z
+      .string()
+      .min(1, '비밀번호를 입력해 주세요.')
+      .min(8, '비밀번호는 최소 8자 이상이어야 합니다.')
+      .max(100, '비밀번호는 최대 100자 이하여야 합니다.'),
     confirmPassword: z.string().min(1, '비밀번호 확인을 입력해 주세요.'),
   })
   .superRefine((data, ctx) => {
-    const policy = evaluatePasswordPolicy(data.password, data.email, data.name);
-    const firstFailed = policy.checks.find((check) => !check.passed);
-
-    if (firstFailed) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['password'],
-        message: `비밀번호 조건: ${firstFailed.label}`,
-      });
-    }
-
     if (data.password !== data.confirmPassword) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -54,7 +49,6 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
     setError,
     clearErrors,
@@ -66,10 +60,6 @@ export default function RegisterPage() {
       confirmPassword: '',
     },
   });
-  const email = watch('email');
-  const name = watch('name');
-  const password = watch('password');
-  const passwordPolicy = evaluatePasswordPolicy(password ?? '', email ?? '', name ?? '');
 
   const handleFieldChange = (field: keyof RegisterFormData) => () => {
     clearErrors(field);
@@ -171,22 +161,25 @@ export default function RegisterPage() {
             {...register('name', { onChange: handleFieldChange('name') })}
           />
 
-          <FormField
-            label="비밀번호"
-            type="password"
-            placeholder="비밀번호를 입력하세요"
-            disabled={registerMutation.isPending}
-            showPasswordToggle
-            error={errors.password?.message}
-            {...register('password', {
-              onChange: handleFieldChange('password'),
-            })}
-          />
-          <PasswordStrengthGuide
-            password={password ?? ''}
-            email={email ?? ''}
-            name={name ?? ''}
-          />
+          <div className="space-y-1">
+            <FormField
+              label="비밀번호"
+              type="password"
+              placeholder="비밀번호를 입력하세요"
+              disabled={registerMutation.isPending}
+              showPasswordToggle
+              error={errors.password?.message}
+              {...register('password', {
+                onChange: handleFieldChange('password'),
+              })}
+            />
+            {!errors.password?.message && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CircleAlert className="h-3.5 w-3.5" />
+                최소 8자 이상 입력하세요
+              </p>
+            )}
+          </div>
 
           <FormField
             label="비밀번호 확인"
@@ -209,7 +202,6 @@ export default function RegisterPage() {
             variant="gradient"
             size="auth"
             className="w-full"
-            disabled={registerMutation.isPending || !passwordPolicy.isValid}
           >
             {registerMutation.isPending ? '가입 중...' : '회원가입'}
           </Button>

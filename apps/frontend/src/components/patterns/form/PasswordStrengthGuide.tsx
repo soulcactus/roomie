@@ -22,7 +22,7 @@ export function PasswordStrengthGuide({
     policy.level === '강함'
       ? 'text-emerald-600'
       : policy.level === '보통'
-        ? 'text-amber-600'
+        ? 'text-sky-600'
         : 'text-brand-danger-text';
 
   return (
@@ -32,8 +32,8 @@ export function PasswordStrengthGuide({
         <p className={`text-[12px] font-semibold ${levelStyle}`}>{policy.level}</p>
       </div>
 
-      <div className="mb-3 grid grid-cols-5 gap-1">
-        {Array.from({ length: 5 }).map((_, index) => (
+      <div className="mb-3 grid gap-1" style={{ gridTemplateColumns: `repeat(${policy.checks.length}, minmax(0, 1fr))` }}>
+        {Array.from({ length: policy.checks.length }).map((_, index) => (
           <div
             key={index}
             className={`h-1.5 rounded-full ${
@@ -41,7 +41,7 @@ export function PasswordStrengthGuide({
                 ? policy.level === '강함'
                   ? 'bg-emerald-500'
                   : policy.level === '보통'
-                    ? 'bg-amber-500'
+                    ? 'bg-sky-500'
                     : 'bg-brand-danger-border'
                 : 'bg-gray-200'
             }`}

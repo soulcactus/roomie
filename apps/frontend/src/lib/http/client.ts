@@ -46,7 +46,17 @@ export async function httpClient<T>(
   if (!res.ok) {
     let errorData: ApiErrorResponse;
     try {
-      errorData = await res.json();
+      const parsed = await res.json();
+      const message =
+        typeof parsed?.message === 'string'
+          ? parsed.message
+          : Array.isArray(parsed?.message)
+            ? parsed.message.join(', ')
+            : res.statusText;
+      errorData = {
+        ...parsed,
+        message,
+      };
     } catch {
       errorData = { message: res.statusText };
     }
@@ -63,7 +73,19 @@ export async function httpClient<T>(
     return { data: {} as T };
   }
 
-  return res.json();
+  const parsed = await res.json();
+
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    !Array.isArray(parsed) &&
+    'data' in parsed
+  ) {
+    return parsed as ApiResponse<T>;
+  }
+
+  // 백엔드가 raw payload를 반환해도 프론트는 동일한 data 래퍼로 사용
+  return { data: parsed as T };
 }
 
 /**

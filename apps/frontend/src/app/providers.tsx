@@ -4,9 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [isMswReady, setIsMswReady] = useState(
-    process.env.NODE_ENV !== 'development',
-  );
+  const shouldEnableMsw =
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_ENABLE_MSW === 'true';
+  const [isMswReady, setIsMswReady] = useState(!shouldEnableMsw);
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -20,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
+    if (!shouldEnableMsw) return;
 
     let cancelled = false;
 
@@ -48,7 +49,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [shouldEnableMsw]);
 
   if (!isMswReady) {
     return null;
