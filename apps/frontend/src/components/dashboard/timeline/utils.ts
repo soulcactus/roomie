@@ -49,20 +49,13 @@ export function toMinutesFromTime(time: string): number {
 
 /**
  * Date와 "HH:MM" 시간을 ISO datetime 문자열로 변환
- * @example toDateTimeString(new Date("2024-01-01"), "09:30") → "2024-01-01T09:30:00"
+ * @example toDateTimeString(new Date("2024-01-01"), "09:30") → "2024-01-01T00:30:00.000Z"
  */
 export function toDateTimeString(date: Date, time: string): string {
   const [hour, minute] = time.split(':').map(Number);
   const next = new Date(date);
   next.setHours(hour, minute, 0, 0);
-
-  const yyyy = next.getFullYear();
-  const mm = String(next.getMonth() + 1).padStart(2, '0');
-  const dd = String(next.getDate()).padStart(2, '0');
-  const hh = String(hour).padStart(2, '0');
-  const mi = String(minute).padStart(2, '0');
-
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:00`;
+  return next.toISOString();
 }
 
 /**
