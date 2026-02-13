@@ -11,11 +11,11 @@ jobs:
     steps:
       - name: Ping Render API
         env:
-          KEEPALIVE_URL: ${{ secrets.RENDER_KEEPALIVE_URL }}
+          KEEPALIVE_URL: ${{ secrets.RENDER_KEEPALIVE_URL || vars.RENDER_KEEPALIVE_URL }}
         run: |
           if [ -z "$KEEPALIVE_URL" ]; then
-            echo "RENDER_KEEPALIVE_URL secret is missing"
-            exit 1
+            echo "RENDER_KEEPALIVE_URL is missing. Skip keepalive."
+            exit 0
           fi
 
           HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
@@ -30,4 +30,3 @@ jobs:
             echo "Server responded with 5xx"
             exit 1
           fi
-
