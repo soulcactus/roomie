@@ -47,10 +47,39 @@ function DashboardSkeleton() {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
-  const [viewState, setViewState] = useState<ViewState>('loading');
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const initialState = getViewState(searchParams.get('state'));
+
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, []);
+
+  if (!selectedDate) {
+    return <DashboardSkeleton />;
+  }
+
+  return (
+    <DashboardContentReady
+      selectedDate={selectedDate}
+      setSelectedDate={setSelectedDate}
+      initialState={initialState}
+    />
+  );
+}
+
+interface DashboardContentReadyProps {
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
+  initialState: ViewState;
+}
+
+function DashboardContentReady({
+  selectedDate,
+  setSelectedDate,
+  initialState,
+}: DashboardContentReadyProps) {
+  const [viewState, setViewState] = useState<ViewState>('loading');
 
   // 예약 관리 훅
   const {

@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
-import { hasValidSession } from '@/lib/auth/session-server';
+import { hasSessionCookie } from '@/lib/auth/session-server';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const isAuthenticated = await hasValidSession();
+  const isAuthenticated = await hasSessionCookie();
   if (!isAuthenticated) {
     redirect('/login');
   }

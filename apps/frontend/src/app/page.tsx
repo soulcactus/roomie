@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import { hasValidSession } from '@/lib/auth/session-server';
+import { hasSessionCookie } from '@/lib/auth/session-server';
 
 export default async function HomePage() {
-  const isAuthenticated = await hasValidSession();
+  const isAuthenticated = await hasSessionCookie();
   redirect(isAuthenticated ? '/dashboard' : '/login');
 }
