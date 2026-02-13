@@ -90,7 +90,6 @@ export function useCreateBooking() {
     },
 
     onError: (error: ApiError) => {
-      // 409 Conflict: 예약 시간 충돌
       if (error.status === 409) {
         toast.error(
           '해당 시간에 이미 예약이 있습니다. 다른 시간을 선택해주세요.',
@@ -98,13 +97,11 @@ export function useCreateBooking() {
         return;
       }
 
-      // 401 Unauthorized
       if (error.status === 401) {
         toast.error('로그인이 필요합니다.');
         return;
       }
 
-      // 기타 에러
       toast.error(error.message ?? '예약에 실패했습니다. 다시 시도해주세요.');
     },
   });

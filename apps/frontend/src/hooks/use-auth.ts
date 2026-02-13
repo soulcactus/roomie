@@ -45,15 +45,15 @@ export function useLogin() {
       httpClient<AuthResponse>('/auth/login', { method: 'POST', body: data }),
 
     onSuccess: (response) => {
-      // Access Token은 메모리에 저장 (또는 상태 관리)
-      // Refresh Token은 서버가 HttpOnly Cookie로 설정
+      // 액세스 토큰은 메모리(또는 상태)로 관리
+      // 리프레시 토큰은 서버가 HttpOnly 쿠키로 설정
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('accessToken', response.data.accessToken);
       }
 
       queryClient.invalidateQueries({ queryKey: ['user'] });
       toast.success('로그인 되었습니다.');
-      router.push('/rooms');
+      router.push('/dashboard');
     },
 
     onError: (error: ApiError) => {
@@ -67,15 +67,12 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: (data: RegisterDto) =>
       httpClient<User>('/auth/register', { method: 'POST', body: data }),
 
     onSuccess: () => {
-      toast.success('회원가입이 완료되었습니다. 로그인해주세요.');
-      router.push('/login');
+      toast.success('회원가입이 완료되었습니다.');
     },
 
     onError: (error: ApiError) => {
