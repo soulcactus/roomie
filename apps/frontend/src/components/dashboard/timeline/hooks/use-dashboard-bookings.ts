@@ -113,11 +113,19 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
       httpClient<DashboardBookingApi[]>(
         `/bookings?startDate=${encodeURIComponent(dayRange.startDate)}&endDate=${encodeURIComponent(dayRange.endDate)}&limit=300`,
       ),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: myBookingsResponse } = useQuery({
     queryKey: ['dashboard', 'bookings', 'mine'],
     queryFn: () => httpClient<DashboardBookingApi[]>('/bookings/my?limit=300'),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: employeesResponse } = useQuery({
