@@ -35,7 +35,7 @@ const KIND_LABELS: Record<BookingKind, string> = {
  * 타임라인 예약 바 컴포넌트
  */
 export function BookingBar({ booking, roomName, onEdit, onView }: BookingBarProps) {
-  const kind = getBookingKind(booking);
+  const kind = booking.kind ?? getBookingKind(booking);
   const left = toPercent(booking.startAt);
   const right = toPercent(booking.endAt);
   const visualCompensation = 0.2;

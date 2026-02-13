@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   getDashboardBookings,
   getRooms,
+  listEmployees,
   listBookings,
   listMyBookings,
   listRoomBookings,
@@ -102,6 +103,17 @@ export const handlers = [
     }
 
     return HttpResponse.json({ data: user });
+  }),
+
+  http.get(`${BASE_PATTERN}/users/employees`, async () => {
+    const user = getCurrentUser();
+    await delay(250);
+
+    if (!user) {
+      return HttpResponse.json({ message: '인증이 필요합니다.' }, { status: 401 });
+    }
+
+    return HttpResponse.json({ data: listEmployees() });
   }),
 
   http.get(`${BASE_PATTERN}/dashboard/rooms`, async () => {

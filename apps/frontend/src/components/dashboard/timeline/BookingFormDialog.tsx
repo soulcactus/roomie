@@ -21,6 +21,7 @@ interface BookingFormDialogBaseProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   roomCapacity?: number;
+  participantOptions?: string[];
   canSubmit: boolean;
 }
 
@@ -45,7 +46,7 @@ type BookingFormDialogProps = CreateModeProps | EditModeProps;
  * 예약 생성/수정 다이얼로그
  */
 export function BookingFormDialog(props: BookingFormDialogProps) {
-  const { open, onOpenChange, roomCapacity, canSubmit, mode, draft, onSubmit } = props;
+  const { open, onOpenChange, roomCapacity, participantOptions, canSubmit, mode, draft, onSubmit } = props;
 
   const isEditMode = mode === 'edit';
   const title = isEditMode ? '예약 수정' : '예약 생성';
@@ -133,6 +134,7 @@ export function BookingFormDialog(props: BookingFormDialogProps) {
             {/* 참석자 */}
             <ParticipantSelector
               participants={draft.participants}
+              options={participantOptions}
               maxCapacity={roomCapacity}
               onParticipantsChange={(participants) => updateDraft('participants', participants)}
             />

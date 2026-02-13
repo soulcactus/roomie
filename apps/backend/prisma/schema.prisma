@@ -16,9 +16,10 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  sessions  Session[]
-  bookings  Booking[]
-  auditLogs AuditLog[]
+  sessions            Session[]
+  bookings            Booking[]
+  bookingParticipants BookingParticipant[]
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
@@ -48,7 +49,6 @@ model Room {
   name      String
   location  String?
   capacity  Int
-  amenities String[]
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -63,19 +63,36 @@ model Booking {
   roomId    String        @map("room_id")
   userId    String        @map("user_id")
   title     String
+  externalParticipants String[] @default([]) @map("external_participants")
   startAt   DateTime      @map("start_at")
   endAt     DateTime      @map("end_at")
   status    BookingStatus @default(CONFIRMED)
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
 
-  room Room @relation(fields: [roomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  room                Room                @relation(fields: [roomId], references: [id])
+  user                User                @relation(fields: [userId], references: [id])
+  bookingParticipants BookingParticipant[]
 
   @@index([roomId, startAt, endAt])
   @@index([userId])
   @@index([status])
   @@map("bookings")
+}
+
+model BookingParticipant {
+  id        String   @id @default(cuid())
+  bookingId String   @map("booking_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, userId])
+  @@index([bookingId])
+  @@index([userId])
+  @@map("booking_participants")
 }
 
 enum BookingStatus {

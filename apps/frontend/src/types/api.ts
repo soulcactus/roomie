@@ -28,7 +28,6 @@ export interface Room {
   name: string;
   location?: string;
   capacity: number;
-  amenities: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,7 +37,6 @@ export interface CreateRoomDto {
   name: string;
   location?: string;
   capacity: number;
-  amenities?: string[];
 }
 
 export interface UpdateRoomDto extends Partial<CreateRoomDto> {

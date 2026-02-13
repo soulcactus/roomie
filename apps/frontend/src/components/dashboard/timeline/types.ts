@@ -29,4 +29,5 @@ export interface Booking {
   participantNames: string[];
   attendees: number;
   status: 'CONFIRMED' | 'CANCELLED';
+  kind?: BookingKind;
 }

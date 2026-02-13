@@ -25,8 +25,12 @@ type AuthRequest = {
 };
 
 type AuthResponse = {
-  setCookie: (name: string, value: string, options: typeof COOKIE_OPTIONS) => void;
-  clearCookie: (name: string, options: { path: string }) => void;
+  setCookie: (
+    name: string,
+    value: string,
+    options: Record<string, unknown>,
+  ) => void;
+  clearCookie: (name: string, options: Record<string, unknown>) => void;
 };
 
 const COOKIE_OPTIONS = {
@@ -44,6 +48,35 @@ const ACCESS_COOKIE_OPTIONS = {
   path: '/',
   maxAge: 15 * 60 * 1000, // 15 minutes
 };
+
+const CLEAR_COOKIE_BASE = {
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  expires: new Date(0),
+};
+
+function clearAuthCookies(res: AuthResponse) {
+  // 명시적으로 옵션을 맞춰 제거하고, 호환성 위해 빈 값 재설정도 함께 수행
+  res.clearCookie(REFRESH_TOKEN_COOKIE, {
+    ...CLEAR_COOKIE_BASE,
+    httpOnly: true,
+  });
+  res.clearCookie(ACCESS_TOKEN_COOKIE, {
+    ...CLEAR_COOKIE_BASE,
+    httpOnly: false,
+  });
+  res.setCookie(REFRESH_TOKEN_COOKIE, '', {
+    ...CLEAR_COOKIE_BASE,
+    httpOnly: true,
+    maxAge: 0,
+  });
+  res.setCookie(ACCESS_TOKEN_COOKIE, '', {
+    ...CLEAR_COOKIE_BASE,
+    httpOnly: false,
+    maxAge: 0,
+  });
+}
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -138,8 +171,7 @@ export class AuthController {
       await this.authService.logout(refreshToken);
     }
 
-    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
-    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
+    clearAuthCookies(res);
 
     return { data: { message: '로그아웃 되었습니다.' } };
   }
@@ -156,8 +188,7 @@ export class AuthController {
   ) {
     await this.authService.logoutAll(userId);
 
-    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
-    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
+    clearAuthCookies(res);
 
     return { data: { message: '모든 기기에서 로그아웃 되었습니다.' } };
   }

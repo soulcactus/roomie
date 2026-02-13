@@ -1,6 +1,11 @@
 import { RequestConfig, ApiResponse, ApiErrorResponse } from './types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_PREFIX = '/api/v1';
+const REFRESH_ENDPOINT = '/auth/refresh';
+const LOGOUT_ENDPOINT = '/auth/logout';
+
+let refreshPromise: Promise<boolean> | null = null;
 
 export class ApiError extends Error {
   constructor(
@@ -10,6 +15,55 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+}
+
+function toApiUrl(endpoint: string) {
+  return endpoint.startsWith('http') ? endpoint : `${BASE_URL}${API_PREFIX}${endpoint}`;
+}
+
+function isAuthRefreshRequest(url: string) {
+  return url.includes(`${API_PREFIX}${REFRESH_ENDPOINT}`);
+}
+
+function isAuthLogoutRequest(url: string) {
+  return url.includes(`${API_PREFIX}${LOGOUT_ENDPOINT}`);
+}
+
+async function tryRefreshAccessToken() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const refreshRes = await fetch(toApiUrl(REFRESH_ENDPOINT), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    return refreshRes.ok;
+  })()
+    .catch(() => false)
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
+async function forceLogoutAndRedirect() {
+  try {
+    await fetch(toApiUrl(LOGOUT_ENDPOINT), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  } catch {
+    // no-op
+  }
+
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.location.href = '/login';
   }
 }
 
@@ -26,22 +80,35 @@ export async function httpClient<T>(
   config: RequestConfig = {},
 ): Promise<ApiResponse<T>> {
   const { method = 'GET', body, headers, cache, next } = config;
+  const url = toApiUrl(endpoint);
 
-  const url = endpoint.startsWith('http')
-    ? endpoint
-    : `${BASE_URL}/api/v1${endpoint}`;
+  const runRequest = () =>
+    fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache,
+      next,
+      credentials: 'include',
+    });
 
-  const res = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    cache,
-    next,
-    credentials: 'include',
-  });
+  let res = await runRequest();
+
+  if (
+    res.status === 401 &&
+    !isAuthRefreshRequest(url) &&
+    !isAuthLogoutRequest(url)
+  ) {
+    const refreshed = await tryRefreshAccessToken();
+    if (refreshed) {
+      res = await runRequest();
+    } else {
+      await forceLogoutAndRedirect();
+    }
+  }
 
   if (!res.ok) {
     let errorData: ApiErrorResponse;

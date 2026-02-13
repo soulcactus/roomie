@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronsUpDown, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { CURRENT_USER, PARTICIPANT_OPTIONS } from './constants';
+import { PARTICIPANT_OPTIONS } from './constants';
 import { normalizeExternalParticipants } from './utils';
 
 interface ParticipantSelectorProps {
   participants: string[];
+  options?: string[];
   maxCapacity?: number;
   onParticipantsChange: (participants: string[]) => void;
 }
@@ -22,41 +23,48 @@ function getExternalCount(list: string[]) {
   return list.filter((name) => isExternalParticipant(name)).length;
 }
 
-function getInternalParticipants(list: string[]) {
+function getInternalParticipants(list: string[], ownerName: string) {
   const internal = list.filter((name) => !isExternalParticipant(name));
-  if (internal.includes(CURRENT_USER)) {
+  if (!ownerName || internal.includes(ownerName)) {
     return internal;
   }
 
-  return [CURRENT_USER, ...internal];
+  return [ownerName, ...internal];
 }
 
 export function ParticipantSelector({
   participants,
+  options,
   maxCapacity,
   onParticipantsChange,
 }: ParticipantSelectorProps) {
+  const ownerName =
+    participants.find((name) => !isExternalParticipant(name)) ??
+    participants[0] ??
+    '';
   const [isOpen, setIsOpen] = useState(false);
   const [draftInternal, setDraftInternal] = useState<string[]>(() =>
-    getInternalParticipants(participants),
+    getInternalParticipants(participants, ownerName),
   );
   const [draftExternalCount, setDraftExternalCount] = useState(() =>
     getExternalCount(participants),
   );
+  const participantOptions: string[] =
+    options && options.length > 0 ? options : [...PARTICIPANT_OPTIONS];
 
   useEffect(() => {
     if (!isOpen) {
-      setDraftInternal(getInternalParticipants(participants));
+      setDraftInternal(getInternalParticipants(participants, ownerName));
       setDraftExternalCount(getExternalCount(participants));
     }
-  }, [isOpen, participants]);
+  }, [isOpen, ownerName, participants]);
 
   const selectedCount = draftInternal.length + draftExternalCount;
   const isOverCapacity = maxCapacity !== undefined && selectedCount > maxCapacity;
   const maxExternalCount = Math.max((maxCapacity ?? Number.MAX_SAFE_INTEGER) - draftInternal.length, 0);
 
   const toggleInternal = (name: string) => {
-    if (name === CURRENT_USER) return;
+    if (name === ownerName) return;
 
     setDraftInternal((prev) => {
       if (prev.includes(name)) {
@@ -77,9 +85,11 @@ export function ParticipantSelector({
   };
 
   const handleApply = () => {
-    const ensuredInternal = draftInternal.includes(CURRENT_USER)
-      ? draftInternal
-      : [CURRENT_USER, ...draftInternal];
+    const ensuredInternal = ownerName
+      ? draftInternal.includes(ownerName)
+        ? draftInternal
+        : [ownerName, ...draftInternal]
+      : draftInternal;
 
     const externalParticipants = Array.from(
       { length: draftExternalCount },
@@ -93,7 +103,7 @@ export function ParticipantSelector({
   };
 
   const removeParticipant = (name: string) => {
-    if (name === CURRENT_USER) return;
+    if (name === ownerName) return;
     onParticipantsChange(
       normalizeExternalParticipants(participants.filter((participant) => participant !== name)),
     );
@@ -122,12 +132,12 @@ export function ParticipantSelector({
         {isOpen && (
           <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border bg-popover p-2 text-[12px] shadow-md">
             <div className="pretty-scrollbar max-h-[108px] overflow-y-auto rounded-[10px] border border-gray-200 bg-white/80 p-1">
-              {PARTICIPANT_OPTIONS.map((name) => {
+              {participantOptions.map((name) => {
                 const checked = draftInternal.includes(name);
-                const isCurrentUser = name === CURRENT_USER;
+                const isOwner = name === ownerName;
                 const disabled =
                   !checked &&
-                  !isCurrentUser &&
+                  !isOwner &&
                   maxCapacity !== undefined &&
                   draftInternal.length + draftExternalCount >= maxCapacity;
 
@@ -137,10 +147,10 @@ export function ParticipantSelector({
                     type="button"
                     className={cn(
                       'flex w-full items-center justify-between rounded px-2 py-1.5 text-left hover:bg-accent',
-                      disabled && 'cursor-not-allowed opacity-50',
+                      (disabled || isOwner) && 'cursor-not-allowed opacity-45',
                     )}
                     onClick={() => toggleInternal(name)}
-                    disabled={disabled || isCurrentUser}
+                    disabled={disabled || isOwner}
                   >
                     <span>{name}</span>
                     <span
@@ -229,7 +239,7 @@ export function ParticipantSelector({
               className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => removeParticipant(name)}
               aria-label={`${name} 제거`}
-              disabled={name === CURRENT_USER}
+              disabled={name === ownerName}
             >
               ×
             </button>

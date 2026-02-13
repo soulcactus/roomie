@@ -82,61 +82,51 @@ async function seedRooms() {
       name: '오로라',
       location: '본관 3층',
       capacity: 6,
-      amenities: [],
     },
     {
       name: '라운지',
       location: '본관 5층',
       capacity: 10,
-      amenities: [],
     },
     {
       name: '허들룸',
       location: '신관 2층',
       capacity: 4,
-      amenities: [],
     },
     {
       name: '시리우스',
       location: '본관 2층',
       capacity: 8,
-      amenities: [],
     },
     {
       name: '폴라리스',
       location: '본관 4층',
       capacity: 12,
-      amenities: [],
     },
     {
       name: '비너스',
       location: '신관 3층',
       capacity: 5,
-      amenities: [],
     },
     {
       name: '머큐리',
       location: '신관 4층',
       capacity: 7,
-      amenities: [],
     },
     {
       name: '넵튠',
       location: '별관 1층',
       capacity: 14,
-      amenities: [],
     },
     {
       name: '주피터',
       location: '별관 2층',
       capacity: 16,
-      amenities: [],
     },
     {
       name: '새턴',
       location: '별관 3층',
       capacity: 20,
-      amenities: [],
     },
   ];
 
@@ -152,7 +142,6 @@ async function seedRooms() {
         data: {
           location: room.location,
           capacity: room.capacity,
-          amenities: room.amenities,
           isActive: true,
         },
       });
@@ -226,7 +215,7 @@ async function seedBookings() {
   const rooms = await prisma.room.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },
-    select: { id: true, name: true },
+    select: { id: true, name: true, capacity: true },
   });
 
   const users = await prisma.user.findMany({
@@ -308,6 +297,7 @@ async function seedBookings() {
     startAt: Date;
     endAt: Date;
     status: 'CONFIRMED';
+    participantUserIds: string[];
   }> = [];
   const myInvolvementIntervals: Array<{ dateKey: string; start: number; end: number }> = [];
 
@@ -399,6 +389,21 @@ async function seedBookings() {
               (dayIndex + roomIndex * 2 + slotIndex + variantOffset) % ownTeamTitles.length
             ];
         const title = finalKind === 'included' ? `${baseTitle} (참여)` : baseTitle;
+        const attendeeSeed = (dayIndex + 1) * (roomIndex + 2) + slotIndex;
+        const maxAttendeeCount = Math.max(1, room.capacity);
+        const targetAttendeeCount = Math.min(2 + (attendeeSeed % 4), maxAttendeeCount);
+        const participantIds = new Set<string>([owner.id]);
+        let participantCursor = attendeeSeed % otherUsers.length;
+
+        if (finalKind === 'included') {
+          participantIds.add(me.id);
+        }
+
+        while (participantIds.size < targetAttendeeCount) {
+          const candidate = otherUsers[participantCursor % otherUsers.length];
+          participantIds.add(candidate.id);
+          participantCursor += 1;
+        }
 
         bookings.push({
           roomId: room.id,
@@ -407,6 +412,7 @@ async function seedBookings() {
           startAt: createDateTimeFromMinute(date, accepted.start),
           endAt: createDateTimeFromMinute(date, accepted.end),
           status: 'CONFIRMED',
+          participantUserIds: Array.from(participantIds),
         });
         roomIntervals.push({ start: accepted.start, end: accepted.end });
         if (finalKind === 'mine' || finalKind === 'included') {
@@ -422,7 +428,24 @@ async function seedBookings() {
     }
   }
 
-  await prisma.booking.createMany({ data: bookings });
+  for (const booking of bookings) {
+    await prisma.booking.create({
+      data: {
+        roomId: booking.roomId,
+        userId: booking.userId,
+        title: booking.title,
+        startAt: booking.startAt,
+        endAt: booking.endAt,
+        status: booking.status,
+        bookingParticipants: {
+          createMany: {
+            data: booking.participantUserIds.map((userId) => ({ userId })),
+            skipDuplicates: true,
+          },
+        },
+      },
+    });
+  }
 }
 
 async function main() {

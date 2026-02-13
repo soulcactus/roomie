@@ -27,6 +27,12 @@ interface AuthResponse {
   accessToken: string;
 }
 
+function clearAuthCookiesOnClient() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'access_token=; Max-Age=0; Path=/; SameSite=Strict';
+  document.cookie = 'refresh_token=; Max-Age=0; Path=/; SameSite=Strict';
+}
+
 export function useUser() {
   return useQuery({
     queryKey: ['user', 'me'],
@@ -87,14 +93,16 @@ export function useLogout() {
     mutationFn: () => httpClient<{ message: string }>('/auth/logout', { method: 'POST' }),
 
     onSuccess: () => {
+      clearAuthCookiesOnClient();
       queryClient.clear();
       toast.success('로그아웃 되었습니다.');
-      router.push('/');
+      router.push('/login');
     },
 
     onError: () => {
+      clearAuthCookiesOnClient();
       queryClient.clear();
-      router.push('/');
+      router.push('/login');
     },
   });
 }

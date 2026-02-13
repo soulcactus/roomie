@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsDateString, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  IsArray,
+  ArrayUnique,
+} from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'clxxxxxxxxxxxxxxxxx', description: '회의실 ID' })
@@ -25,4 +33,28 @@ export class CreateBookingDto {
   })
   @IsDateString()
   endAt!: string;
+
+  @ApiProperty({
+    required: false,
+    description: '참석자 사용자 ID 목록 (예약자 포함 권장)',
+    type: [String],
+    example: ['clxxxxxxxxxxxxxxxxx', 'clyyyyyyyyyyyyyyyyy'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayUnique()
+  participantIds?: string[];
+
+  @ApiProperty({
+    required: false,
+    description: '외부 참석자 이름 목록',
+    type: [String],
+    example: ['외부참석자 1', '외부참석자 2'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayUnique()
+  externalParticipants?: string[];
 }

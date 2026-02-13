@@ -8,14 +8,24 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 export class RoomService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly roomSelect = {
+    id: true,
+    name: true,
+    location: true,
+    capacity: true,
+    isActive: true,
+    createdAt: true,
+    updatedAt: true,
+  } satisfies Prisma.RoomSelect;
+
   async create(dto: CreateRoomDto, userId: string) {
     const room = await this.prisma.room.create({
       data: {
         name: dto.name,
         location: dto.location,
         capacity: dto.capacity,
-        amenities: dto.amenities ?? [],
       },
+      select: this.roomSelect,
     });
 
     // 감사 로그
@@ -42,6 +52,7 @@ export class RoomService {
         where,
         skip,
         take: limit,
+        select: this.roomSelect,
         orderBy: { name: 'asc' },
       }),
       this.prisma.room.count({ where }),
@@ -61,6 +72,7 @@ export class RoomService {
   async findById(id: string) {
     const room = await this.prisma.room.findUnique({
       where: { id },
+      select: this.roomSelect,
     });
 
     if (!room) {
@@ -76,6 +88,7 @@ export class RoomService {
     const room = await this.prisma.room.update({
       where: { id },
       data: dto,
+      select: this.roomSelect,
     });
 
     await this.prisma.auditLog.create({

@@ -30,6 +30,7 @@ interface DashboardBookingApi {
   startAt: string;
   endAt: string;
   status: 'CONFIRMED' | 'CANCELLED';
+  externalParticipants?: string[];
   room?: {
     id: string;
     name: string;
@@ -41,28 +42,25 @@ interface DashboardBookingApi {
     name: string;
     email: string;
   };
+  bookingParticipants?: Array<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: 'USER' | 'ADMIN';
+    };
+  }>;
+}
+
+interface DashboardEmployeeApi {
+  id: string;
+  name: string;
+  role: 'USER' | 'ADMIN';
 }
 
 interface UseDashboardBookingsOptions {
   selectedDate: Date;
 }
-
-const ATTENDEE_POOL = [
-  '김지윤',
-  '박민수',
-  '최유진',
-  '오지훈',
-  '한소라',
-  '정다은',
-  '유현우',
-  '강민아',
-  '이태현',
-  '임나영',
-  '김동하',
-  '서지연',
-  '최준호',
-  '윤수진',
-];
 
 function getDayRangeParams(date: Date) {
   const start = new Date(date);
@@ -77,6 +75,10 @@ function getDayRangeParams(date: Date) {
   };
 }
 
+function isExternalParticipantName(name: string) {
+  return name.startsWith('외부참석자');
+}
+
 /**
  * 예약 생성/수정/삭제와 상태를 관리하는 훅
  */
@@ -84,6 +86,7 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
   const queryClient = useQueryClient();
   const userQuery = useUser();
   const currentUserId = userQuery.data?.data.id;
+  const currentUserName = userQuery.data?.data.name ?? CURRENT_USER;
   const dayRange = useMemo(() => getDayRangeParams(selectedDate), [selectedDate]);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -117,8 +120,20 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
     queryFn: () => httpClient<DashboardBookingApi[]>('/bookings/my?limit=300'),
   });
 
+  const { data: employeesResponse } = useQuery({
+    queryKey: ['dashboard', 'employees'],
+    queryFn: () => httpClient<DashboardEmployeeApi[]>('/users/employees'),
+  });
+
   const createBookingMutation = useMutation({
-    mutationFn: (booking: { roomId: string; title: string; startAt: string; endAt: string }) =>
+    mutationFn: (booking: {
+      roomId: string;
+      title: string;
+      startAt: string;
+      endAt: string;
+      participantIds: string[];
+      externalParticipants: string[];
+    }) =>
       httpClient<DashboardBookingApi>('/bookings', {
         method: 'POST',
         body: booking,
@@ -136,7 +151,13 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
   const editBookingMutation = useMutation({
     mutationFn: (input: {
       id: string;
-      booking: { title: string; startAt: string; endAt: string };
+      booking: {
+        title: string;
+        startAt: string;
+        endAt: string;
+        participantIds: string[];
+        externalParticipants: string[];
+      };
     }) =>
       httpClient<{ id: string }>(`/bookings/${input.id}`, {
         method: 'PUT',
@@ -181,6 +202,17 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
     [rooms],
   );
 
+  const participantOptions = useMemo(() => {
+    const names = (employeesResponse?.data ?? []).map((employee) => employee.name);
+    const merged = names.length > 0 ? names : [currentUserName];
+    return Array.from(new Set([currentUserName, ...merged]));
+  }, [currentUserName, employeesResponse?.data]);
+  const employeeIdByName = useMemo(
+    () =>
+      new Map((employeesResponse?.data ?? []).map((employee) => [employee.name, employee.id] as const)),
+    [employeesResponse?.data],
+  );
+
   const allBookings = useMemo(() => {
     const today = todayBookingsResponse?.data ?? [];
     const myBookings = myBookingsResponse?.data ?? [];
@@ -192,46 +224,46 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
           booking.id,
           (() => {
             const isMine = myBookingIds.has(booking.id) || booking.userId === currentUserId;
-            const isIncluded = !isMine && booking.title.includes('(참여)');
-            const reserverName = isMine ? CURRENT_USER : (booking.user?.name ?? '사용자');
-            const seed =
-              booking.id.length +
-              new Date(booking.startAt).getHours() +
-              (booking.room?.name?.length ?? 0);
-            const targetCount = 2 + (seed % 5); // 2~6명
-            const roomCapacity = booking.room?.capacity ?? targetCount;
-            const cappedTargetCount = Math.max(1, Math.min(targetCount, roomCapacity));
-            const participantSet = new Set<string>([reserverName]);
-
-            if (isMine || isIncluded) {
-              participantSet.add(CURRENT_USER);
-            }
-
-            let cursor = seed % ATTENDEE_POOL.length;
-            while (participantSet.size < cappedTargetCount) {
-              participantSet.add(ATTENDEE_POOL[cursor % ATTENDEE_POOL.length]);
-              cursor += 1;
-            }
-
-            const participantNames = Array.from(participantSet).slice(0, cappedTargetCount);
+            const participantNamesFromApi = (booking.bookingParticipants ?? []).map(
+              ({ user }) => user.name,
+            );
+            const participantNames = Array.from(
+              new Set([
+                ...participantNamesFromApi,
+                ...(booking.externalParticipants ?? []),
+              ]),
+            );
+            const normalizedParticipantNames = participantNames.length
+              ? participantNames
+              : [booking.user?.name ?? currentUserName];
+            const isIncluded =
+              !isMine && normalizedParticipantNames.includes(currentUserName);
+            const kind = isMine ? 'mine' : isIncluded ? 'included' : 'other';
+            const reserverName = booking.user?.name ?? (isMine ? currentUserName : '사용자');
             const normalizedTitle = booking.title.replace(/\s*\(참여\)\s*$/, '');
 
             return {
-            id: booking.id,
-            title: normalizedTitle,
-            roomName: booking.room?.name ?? '-',
-            startAt: booking.startAt,
-            endAt: booking.endAt,
-            reserverName,
-            participantNames,
-            attendees: participantNames.length,
-            status: booking.status,
+              id: booking.id,
+              title: normalizedTitle,
+              roomName: booking.room?.name ?? '-',
+              startAt: booking.startAt,
+              endAt: booking.endAt,
+              reserverName,
+              participantNames: normalizedParticipantNames,
+              attendees: normalizedParticipantNames.length,
+              status: booking.status,
+              kind,
             } satisfies Booking;
           })(),
         ]),
       ).values(),
     );
-  }, [currentUserId, myBookingsResponse?.data, todayBookingsResponse?.data]);
+  }, [
+    currentUserId,
+    currentUserName,
+    myBookingsResponse?.data,
+    todayBookingsResponse?.data,
+  ]);
 
   const bookings = useMemo(
     () => allBookings.filter((booking) => isSameDay(new Date(booking.startAt), selectedDate)),
@@ -348,13 +380,17 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
       startTime: toTimeString(startMinutes),
       endTime: toTimeString(endMinutes),
       title: '',
-      participants: [CURRENT_USER],
+      participants: [currentUserName],
       participantQuery: '',
     });
     setIsCreateOpen(true);
   };
 
   const openEditBooking = (booking: Booking) => {
+    const normalizedParticipants = Array.from(
+      new Set([currentUserName, ...booking.participantNames]),
+    );
+
     setEditDraft({
       id: booking.id,
       roomId: roomIdByName.get(booking.roomName) ?? booking.roomName,
@@ -363,9 +399,7 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
       startTime: toTimeString(toMinutes(booking.startAt)),
       endTime: toTimeString(toMinutes(booking.endAt)),
       title: booking.title,
-      participants: booking.participantNames.length
-        ? booking.participantNames
-        : [CURRENT_USER],
+      participants: normalizedParticipants.length ? normalizedParticipants : [currentUserName],
       participantQuery: '',
     });
     setIsEditOpen(true);
@@ -388,6 +422,13 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
       title: draftBooking.title.trim() || '새 예약',
       startAt,
       endAt,
+      participantIds: draftBooking.participants
+        .filter((name) => !isExternalParticipantName(name))
+        .map((name) => employeeIdByName.get(name))
+        .filter((id): id is string => Boolean(id)),
+      externalParticipants: draftBooking.participants.filter((name) =>
+        isExternalParticipantName(name),
+      ),
     });
   };
 
@@ -404,6 +445,13 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
         title: editDraft.title.trim() || '새 예약',
         startAt,
         endAt,
+        participantIds: editDraft.participants
+          .filter((name) => !isExternalParticipantName(name))
+          .map((name) => employeeIdByName.get(name))
+          .filter((id): id is string => Boolean(id)),
+        externalParticipants: editDraft.participants.filter((name) =>
+          isExternalParticipantName(name),
+        ),
       },
     });
   };
@@ -427,6 +475,7 @@ export function useDashboardBookings({ selectedDate }: UseDashboardBookingsOptio
     draftBooking,
     setDraftBooking,
     selectedRoomCapacity,
+    participantOptions,
     canSubmit,
     openCreateBooking,
     handleCreateSubmit,

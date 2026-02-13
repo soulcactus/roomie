@@ -53,4 +53,15 @@ export class UserService {
       },
     };
   }
+
+  async findEmployees() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        role: true,
+      },
+      orderBy: [{ role: 'desc' }, { name: 'asc' }],
+    });
+  }
 }

@@ -13,6 +13,40 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 export class BookingService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeExternalParticipants(list: string[] | undefined) {
+    if (!list) return [];
+    return Array.from(
+      new Set(list.map((name) => name.trim()).filter((name) => name.length > 0)),
+    );
+  }
+
+  private getBookingInclude() {
+    return {
+      room: { select: { id: true, name: true, location: true, capacity: true } },
+      user: { select: { id: true, name: true, email: true } },
+      bookingParticipants: {
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+      },
+    } satisfies Prisma.BookingInclude;
+  }
+
+  private async resolveParticipantIds(
+    tx: Prisma.TransactionClient,
+    requestedIds: string[] | undefined,
+    ownerId: string,
+  ) {
+    const uniqueIds = Array.from(new Set([ownerId, ...(requestedIds ?? [])]));
+    const users = await tx.user.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    return users.map((user) => user.id);
+  }
+
   /**
    * 예약 생성
    *
@@ -35,18 +69,30 @@ export class BookingService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        const participantIds = await this.resolveParticipantIds(
+          tx,
+          dto.participantIds,
+          userId,
+        );
+
         const booking = await tx.booking.create({
           data: {
             roomId: dto.roomId,
             userId,
             title: dto.title,
+            externalParticipants: this.normalizeExternalParticipants(
+              dto.externalParticipants,
+            ),
             startAt: new Date(dto.startAt),
             endAt: new Date(dto.endAt),
+            bookingParticipants: {
+              createMany: {
+                data: participantIds.map((participantId) => ({ userId: participantId })),
+                skipDuplicates: true,
+              },
+            },
           },
-          include: {
-            room: { select: { id: true, name: true } },
-            user: { select: { id: true, name: true, email: true } },
-          },
+          include: this.getBookingInclude(),
         });
 
         // 감사 로그
@@ -106,10 +152,7 @@ export class BookingService {
         where,
         skip,
         take: limit,
-        include: {
-          room: { select: { id: true, name: true, location: true, capacity: true } },
-          user: { select: { id: true, name: true, email: true } },
-        },
+        include: this.getBookingInclude(),
         orderBy: { startAt: 'asc' },
       }),
       this.prisma.booking.count({ where }),
@@ -129,10 +172,7 @@ export class BookingService {
   async findById(id: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: {
-        room: true,
-        user: { select: { id: true, name: true, email: true } },
-      },
+      include: this.getBookingInclude(),
     });
 
     if (!booking) {
@@ -154,9 +194,7 @@ export class BookingService {
         startAt: { gte: startOfDay },
         endAt: { lte: endOfDay },
       },
-      include: {
-        user: { select: { id: true, name: true } },
-      },
+      include: this.getBookingInclude(),
       orderBy: { startAt: 'asc' },
     });
   }
@@ -175,17 +213,42 @@ export class BookingService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        if (dto.participantIds) {
+          const participantIds = await this.resolveParticipantIds(
+            tx,
+            dto.participantIds,
+            booking.userId,
+          );
+
+          await tx.bookingParticipant.deleteMany({
+            where: {
+              bookingId: id,
+              userId: { notIn: participantIds },
+            },
+          });
+
+          await tx.bookingParticipant.createMany({
+            data: participantIds.map((participantId) => ({
+              bookingId: id,
+              userId: participantId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
         const updatedBooking = await tx.booking.update({
           where: { id },
           data: {
             ...(dto.title && { title: dto.title }),
             ...(dto.startAt && { startAt: new Date(dto.startAt) }),
             ...(dto.endAt && { endAt: new Date(dto.endAt) }),
+            ...(dto.externalParticipants && {
+              externalParticipants: this.normalizeExternalParticipants(
+                dto.externalParticipants,
+              ),
+            }),
           },
-          include: {
-            room: { select: { id: true, name: true, capacity: true } },
-            user: { select: { id: true, name: true, email: true } },
-          },
+          include: this.getBookingInclude(),
         });
 
         await tx.auditLog.create({

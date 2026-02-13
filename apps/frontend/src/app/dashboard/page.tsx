@@ -81,6 +81,7 @@ function DashboardContent() {
     draftBooking,
     setDraftBooking,
     selectedRoomCapacity,
+    participantOptions,
     canSubmit,
     openCreateBooking,
     handleCreateSubmit,
@@ -282,6 +283,7 @@ function DashboardContent() {
         draft={draftBooking}
         onDraftChange={setDraftBooking}
         roomCapacity={selectedRoomCapacity}
+        participantOptions={participantOptions}
         canSubmit={canSubmit}
         onSubmit={handleCreateSubmit}
       />
@@ -294,6 +296,7 @@ function DashboardContent() {
         draft={editDraft}
         onDraftChange={setEditDraft}
         roomCapacity={editRoomCapacity}
+        participantOptions={participantOptions}
         canSubmit={canEditSubmit}
         onSubmit={handleEditSubmit}
         onDelete={handleDeleteBooking}

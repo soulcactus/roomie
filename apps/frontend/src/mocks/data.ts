@@ -36,6 +36,12 @@ export interface ApiBooking {
 
 const seededUsers: MockApiUser[] = [
   {
+    id: 'u-admin',
+    email: 'admin@roomie.com',
+    name: '관리자',
+    role: 'ADMIN',
+  },
+  {
     id: 'u-1',
     email: SEED_USER.email,
     name: SEED_USER.name,
@@ -127,6 +133,14 @@ let bookings: ApiBooking[] = Array.from(
 
 export function getCurrentUser() {
   return currentUser;
+}
+
+export function listEmployees() {
+  return seededUsers.map((user) => ({
+    id: user.id,
+    name: user.name,
+    role: user.role,
+  }));
 }
 
 export function loginByEmail(email: string) {

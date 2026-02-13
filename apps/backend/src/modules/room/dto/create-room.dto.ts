@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsInt,
-  IsArray,
   IsOptional,
   Min,
   Max,
@@ -28,10 +27,4 @@ export class CreateRoomDto {
   @Min(1)
   @Max(100)
   capacity!: number;
-
-  @ApiPropertyOptional({ example: ['TV', '화이트보드', '화상회의'] })
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  amenities?: string[];
 }

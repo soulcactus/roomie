@@ -19,6 +19,12 @@ export class UserController {
     return this.userService.findById(userId);
   }
 
+  @Get('employees')
+  @ApiOperation({ summary: '직원 목록 조회 (인증 사용자)' })
+  async findEmployees() {
+    return this.userService.findEmployees();
+  }
+
   @Get()
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
