@@ -107,7 +107,7 @@ export class BookingService {
         skip,
         take: limit,
         include: {
-          room: { select: { id: true, name: true, location: true } },
+          room: { select: { id: true, name: true, location: true, capacity: true } },
           user: { select: { id: true, name: true, email: true } },
         },
         orderBy: { startAt: 'asc' },
@@ -183,7 +183,7 @@ export class BookingService {
             ...(dto.endAt && { endAt: new Date(dto.endAt) }),
           },
           include: {
-            room: { select: { id: true, name: true } },
+            room: { select: { id: true, name: true, capacity: true } },
             user: { select: { id: true, name: true, email: true } },
           },
         });

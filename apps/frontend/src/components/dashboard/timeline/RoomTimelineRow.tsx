@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import { formatTimeRange } from '@/components/dashboard/format';
 import type { Booking } from './types';
 import { TIMELINE_LAYOUT, DAY_START_HOUR, DAY_END_HOUR } from './constants';
-import { getBookingKind } from './utils';
 import { BookingBar } from './BookingBar';
 
 interface Room {
@@ -48,8 +47,7 @@ export function RoomTimelineRow({
   });
 
   const attendees = currentBooking?.attendees ?? 0;
-  const currentBookingKind = currentBooking ? getBookingKind(currentBooking) : 'other';
-  const highlighted = currentBookingKind === 'mine' || currentBookingKind === 'included';
+  const highlighted = Boolean(currentBooking);
 
   const handleTimelineClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
@@ -78,7 +76,7 @@ export function RoomTimelineRow({
       {/* 회의실 정보 */}
       <div
         className={cn(
-          'sticky left-0 z-40 flex h-[68px] flex-col justify-center bg-muted/70 px-2 backdrop-blur-sm backdrop-saturate-150',
+          'sticky left-0 z-20 flex h-[68px] flex-col justify-center bg-muted/70 px-2 backdrop-blur-sm backdrop-saturate-150',
           isTimelineShifted ? 'rounded-r-lg rounded-l-none' : 'rounded-lg',
         )}
       >
