@@ -165,9 +165,6 @@ function DashboardContent() {
                 <div
                   className={cn(
                     'sticky top-0 z-50 border-b bg-background/95 py-2',
-                    isTimelineAtRightEdge
-                      ? 'rounded-t-xl'
-                      : 'rounded-tl-xl rounded-tr-none',
                   )}
                 >
                   <div

@@ -26,7 +26,11 @@ function copySetCookieHeaders(source: Headers, target: Headers) {
 
   const setCookie = source.get('set-cookie');
   if (setCookie) {
-    target.append('set-cookie', setCookie);
+    // 일부 런타임에서 여러 Set-Cookie가 단일 문자열로 합쳐질 수 있어 분리 처리
+    const splitCookies = setCookie.split(/,(?=[^;,\s]+=)/g);
+    for (const cookie of splitCookies) {
+      target.append('set-cookie', cookie.trim());
+    }
   }
 }
 
@@ -104,4 +108,3 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 export async function PATCH(request: NextRequest, context: RouteContext) {
   return proxy(request, context.params.path);
 }
-
