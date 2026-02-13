@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
@@ -83,7 +84,7 @@ export class RoomService {
         entityType: 'Room',
         entityId: room.id,
         userId,
-        metadata: { changes: dto },
+        metadata: { changes: dto as unknown as Prisma.InputJsonObject },
       },
     });
 

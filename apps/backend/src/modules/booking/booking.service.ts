@@ -194,7 +194,7 @@ export class BookingService {
             entityType: 'Booking',
             entityId: id,
             userId,
-            metadata: { changes: dto },
+            metadata: { changes: dto as unknown as Prisma.InputJsonObject },
           },
         });
 

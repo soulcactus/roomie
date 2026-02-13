@@ -38,20 +38,24 @@ async function bootstrap() {
   // API 접두사
   app.setGlobalPrefix('api/v1');
 
-  // Swagger 설정
-  const config = new DocumentBuilder()
-    .setTitle('Roomie API')
-    .setDescription('회의실 예약 SaaS API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  // Swagger 설정 (Fastify static 패키지 설치 전까지 비활성화 가능)
+  if (process.env.ENABLE_SWAGGER_UI === 'true') {
+    const config = new DocumentBuilder()
+      .setTitle('Roomie API')
+      .setDescription('회의실 예약 SaaS API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   const port = process.env.BACKEND_PORT ?? 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`Server running on http://localhost:${port}`);
-  console.log(`Swagger docs: http://localhost:${port}/docs`);
+  if (process.env.ENABLE_SWAGGER_UI === 'true') {
+    console.log(`Swagger docs: http://localhost:${port}/docs`);
+  }
 }
 
 bootstrap();

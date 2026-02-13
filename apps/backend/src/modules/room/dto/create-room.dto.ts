@@ -15,7 +15,7 @@ export class CreateRoomDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: '본관 3층' })
   @IsString()
@@ -27,7 +27,7 @@ export class CreateRoomDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  capacity: number;
+  capacity!: number;
 
   @ApiPropertyOptional({ example: ['TV', '화이트보드', '화상회의'] })
   @IsArray()
