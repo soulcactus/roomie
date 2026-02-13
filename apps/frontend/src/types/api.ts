@@ -11,7 +11,7 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
-// User 관련 타입
+// 사용자 관련 타입
 export type Role = 'USER' | 'ADMIN';
 
 export interface User {
@@ -22,7 +22,7 @@ export interface User {
   createdAt: string;
 }
 
-// Room 관련 타입
+// 회의실 관련 타입
 export interface Room {
   id: string;
   name: string;
@@ -45,7 +45,7 @@ export interface UpdateRoomDto extends Partial<CreateRoomDto> {
   isActive?: boolean;
 }
 
-// Booking 관련 타입
+// 예약 관련 타입
 export type BookingStatus = 'CONFIRMED' | 'CANCELLED';
 
 export interface Booking {
@@ -65,8 +65,8 @@ export interface Booking {
 export interface CreateBookingDto {
   roomId: string;
   title: string;
-  startAt: string; // ISO 8601
-  endAt: string;   // ISO 8601
+  startAt: string; // ISO 8601 형식
+  endAt: string;   // ISO 8601 형식
 }
 
 export interface UpdateBookingDto {
@@ -75,7 +75,7 @@ export interface UpdateBookingDto {
   endAt?: string;
 }
 
-// Auth 관련 타입
+// 인증 관련 타입
 export interface LoginDto {
   email: string;
   password: string;

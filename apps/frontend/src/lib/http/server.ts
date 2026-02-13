@@ -3,11 +3,11 @@ import { httpClient } from './client';
 import { RequestConfig, ApiResponse } from './types';
 
 /**
- * 서버 컴포넌트 전용 fetch 함수
+ * 서버 컴포넌트 전용 요청 함수
  *
  * 특징:
- * - cookies()에서 access_token을 읽어 Authorization 헤더에 주입
- * - 기본적으로 no-store 캐싱 (동적 데이터)
+ * - `cookies()`에서 access_token을 읽어 Authorization 헤더에 주입
+ * - 기본값으로 `no-store` 캐싱 사용 (동적 데이터)
  * - 서버 컴포넌트에서만 사용 가능
  */
 export async function serverFetch<T>(

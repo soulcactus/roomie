@@ -14,12 +14,12 @@ export class ApiError extends Error {
 }
 
 /**
- * 서버/클라이언트 공용 fetch 기반 HTTP 클라이언트
+ * 서버/클라이언트 공용 요청 클라이언트
  *
  * 특징:
- * - credentials: 'include'로 HttpOnly Cookie 자동 전송
- * - 에러 시 ApiError 예외 발생 (status, message, code 포함)
- * - Next.js App Router의 cache/next 옵션 지원
+ * - `credentials: 'include'`로 HttpOnly 쿠키 자동 전송
+ * - 오류 발생 시 `ApiError` 예외 반환 (status, message, code 포함)
+ * - Next.js App Router의 `cache`/`next` 옵션 사용 가능
  */
 export async function httpClient<T>(
   endpoint: string,
@@ -58,7 +58,7 @@ export async function httpClient<T>(
     );
   }
 
-  // 204 No Content 처리
+  // 204 응답(본문 없음) 처리
   if (res.status === 204) {
     return { data: {} as T };
   }
@@ -67,7 +67,7 @@ export async function httpClient<T>(
 }
 
 /**
- * GET 요청 헬퍼
+ * 조회 요청 도우미
  */
 export function get<T>(
   endpoint: string,
@@ -77,7 +77,7 @@ export function get<T>(
 }
 
 /**
- * POST 요청 헬퍼
+ * 생성 요청 도우미
  */
 export function post<T>(
   endpoint: string,
@@ -88,7 +88,7 @@ export function post<T>(
 }
 
 /**
- * PUT 요청 헬퍼
+ * 수정 요청 도우미
  */
 export function put<T>(
   endpoint: string,
@@ -99,7 +99,7 @@ export function put<T>(
 }
 
 /**
- * DELETE 요청 헬퍼
+ * 삭제 요청 도우미
  */
 export function del<T>(
   endpoint: string,
