@@ -17,6 +17,13 @@ interface TokenPayload {
   role: string;
 }
 
+interface RefreshTokenPayload {
+  sub: string;
+  type: 'refresh';
+  iat?: number;
+  exp?: number;
+}
+
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -88,6 +95,19 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<AuthTokens> {
+    let payload: RefreshTokenPayload;
+    try {
+      payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
+        secret: this.getJwtSecret(),
+      });
+    } catch {
+      throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
+    }
+
     const tokenHash = this.hashToken(refreshToken);
 
     const session = await this.prisma.session.findFirst({
@@ -99,6 +119,9 @@ export class AuthService {
     });
 
     if (!session) {
+      throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
+    }
+    if (session.user.id !== payload.sub) {
       throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
     }
 
@@ -139,15 +162,18 @@ export class AuthService {
     // Access Token 생성
     const accessToken = this.jwtService.sign(payload);
 
-    // Refresh Token 생성 (랜덤 문자열)
-    const refreshToken = crypto.randomBytes(32).toString('hex');
+    // Refresh Token 생성 (JWT)
+    const refreshExpiresIn = this.getRefreshExpiresIn();
+    const refreshToken = this.jwtService.sign(
+      { sub: userId, type: 'refresh' },
+      {
+        secret: this.getJwtSecret(),
+        expiresIn: refreshExpiresIn,
+      },
+    );
     const refreshTokenHash = this.hashToken(refreshToken);
 
     // 리프레시 토큰 만료 시간 계산
-    const refreshExpiresIn = this.configService.get<string>(
-      'jwt.refreshExpiresIn',
-      '14d',
-    );
     const expiresAt = this.calculateExpiry(refreshExpiresIn);
 
     // DB에 세션 저장 (해시값만)
@@ -166,6 +192,17 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private getJwtSecret() {
+    return this.configService.get<string>(
+      'jwt.secret',
+      'default-secret-change-in-production',
+    );
+  }
+
+  private getRefreshExpiresIn() {
+    return this.configService.get<string>('jwt.refreshExpiresIn', '14d');
   }
 
   private calculateExpiry(duration: string): Date {

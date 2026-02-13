@@ -2,7 +2,6 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -21,7 +20,12 @@ describe('AuthService', () => {
   } as unknown as PrismaService;
 
   const jwtService = {
-    sign: jest.fn(() => 'mock-access-token'),
+    sign: jest
+      .fn()
+      .mockImplementation((_payload: unknown, options?: unknown) =>
+        options ? 'mock.refresh.token' : 'mock-access-token',
+      ),
+    verify: jest.fn(),
   } as unknown as JwtService;
 
   const configService = {
@@ -56,9 +60,6 @@ describe('AuthService', () => {
     });
     prisma.session.create = jest.fn().mockResolvedValue({ id: 's-1' });
     jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-    jest
-      .spyOn(crypto, 'randomBytes')
-      .mockReturnValue(Buffer.from('a'.repeat(32)) as never);
 
     const result = await service.login({
       email: 'user@roomie.com',
@@ -66,11 +67,14 @@ describe('AuthService', () => {
     });
 
     expect(result.accessToken).toBe('mock-access-token');
-    expect(result.refreshToken).toHaveLength(64);
+    expect(result.refreshToken.split('.')).toHaveLength(3);
     expect(prisma.session.create).toHaveBeenCalledTimes(1);
   });
 
   it('리프레시 토큰이 유효하지 않으면 UnauthorizedException을 던진다', async () => {
+    (jwtService.verify as jest.Mock).mockImplementation(() => {
+      throw new Error('invalid');
+    });
     prisma.session.findFirst = jest.fn().mockResolvedValue(null);
 
     await expect(
@@ -78,4 +82,3 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
-

@@ -15,9 +15,18 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  const defaultDevOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+  const configuredOrigin = process.env.FRONTEND_URL;
+  const allowedOrigins = configuredOrigin
+    ? Array.from(new Set([configuredOrigin, ...defaultDevOrigins]))
+    : defaultDevOrigins;
+
   // CORS 설정
   await app.register(fastifyCors, {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   });
 

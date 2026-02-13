@@ -18,6 +18,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const ACCESS_TOKEN_COOKIE = 'access_token';
+const IS_PROD = process.env.NODE_ENV === 'production';
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
+const COOKIE_SAME_SITE: 'lax' | 'none' = IS_PROD ? 'none' : 'lax';
 type AuthRequest = {
   headers: Record<string, string | string[] | undefined>;
   ip?: string;
@@ -35,37 +38,66 @@ type AuthResponse = {
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: IS_PROD,
+  sameSite: COOKIE_SAME_SITE,
   path: '/',
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
 };
 
 const ACCESS_COOKIE_OPTIONS = {
   httpOnly: false,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: IS_PROD,
+  sameSite: COOKIE_SAME_SITE,
   path: '/',
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   maxAge: 15 * 60 * 1000, // 15 minutes
 };
 
 const CLEAR_COOKIE_BASE = {
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: IS_PROD,
+  sameSite: COOKIE_SAME_SITE,
   path: '/',
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   expires: new Date(0),
 };
 
+function expireCookieAllVariants(
+  res: AuthResponse,
+  cookieName: string,
+  httpOnly: boolean,
+) {
+  const domains = COOKIE_DOMAIN ? [undefined, COOKIE_DOMAIN] : [undefined];
+  const sameSites: Array<'lax' | 'strict' | 'none'> = ['lax', 'strict', 'none'];
+  const secures = [false, true];
+
+  for (const domain of domains) {
+    for (const sameSite of sameSites) {
+      for (const secure of secures) {
+        // sameSite=none은 secure=true여야 브라우저가 수용
+        if (sameSite === 'none' && !secure) continue;
+
+        const options = {
+          path: '/',
+          httpOnly,
+          sameSite,
+          secure,
+          expires: new Date(0),
+          maxAge: 0,
+          ...(domain ? { domain } : {}),
+        };
+
+        res.clearCookie(cookieName, options);
+        res.setCookie(cookieName, '', options);
+      }
+    }
+  }
+}
+
 function clearAuthCookies(res: AuthResponse) {
-  // 명시적으로 옵션을 맞춰 제거하고, 호환성 위해 빈 값 재설정도 함께 수행
-  res.clearCookie(REFRESH_TOKEN_COOKIE, {
-    ...CLEAR_COOKIE_BASE,
-    httpOnly: true,
-  });
-  res.clearCookie(ACCESS_TOKEN_COOKIE, {
-    ...CLEAR_COOKIE_BASE,
-    httpOnly: false,
-  });
+  // 표준 옵션으로 우선 삭제
+  res.clearCookie(REFRESH_TOKEN_COOKIE, { ...CLEAR_COOKIE_BASE, httpOnly: true });
+  res.clearCookie(ACCESS_TOKEN_COOKIE, { ...CLEAR_COOKIE_BASE, httpOnly: false });
   res.setCookie(REFRESH_TOKEN_COOKIE, '', {
     ...CLEAR_COOKIE_BASE,
     httpOnly: true,
@@ -76,6 +108,10 @@ function clearAuthCookies(res: AuthResponse) {
     httpOnly: false,
     maxAge: 0,
   });
+
+  // 과거 옵션으로 저장된 쿠키까지 제거
+  expireCookieAllVariants(res, REFRESH_TOKEN_COOKIE, true);
+  expireCookieAllVariants(res, ACCESS_TOKEN_COOKIE, false);
 }
 
 @ApiTags('Auth')

@@ -99,10 +99,8 @@ export function useLogout() {
       router.push('/login');
     },
 
-    onError: () => {
-      clearAuthCookiesOnClient();
-      queryClient.clear();
-      router.push('/login');
+    onError: (error: ApiError) => {
+      toast.error(error.message ?? '로그아웃에 실패했습니다. 네트워크/쿠키 설정을 확인해 주세요.');
     },
   });
 }
