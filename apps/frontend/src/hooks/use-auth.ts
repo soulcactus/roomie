@@ -44,13 +44,7 @@ export function useLogin() {
     mutationFn: (data: LoginDto) =>
       httpClient<AuthResponse>('/auth/login', { method: 'POST', body: data }),
 
-    onSuccess: (response) => {
-      // 액세스 토큰은 메모리(또는 상태)로 관리
-      // 리프레시 토큰은 서버가 HttpOnly 쿠키로 설정
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('accessToken', response.data.accessToken);
-      }
-
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
       toast.success('로그인 되었습니다.');
       router.push('/dashboard');
@@ -93,20 +87,12 @@ export function useLogout() {
     mutationFn: () => httpClient<{ message: string }>('/auth/logout', { method: 'POST' }),
 
     onSuccess: () => {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('accessToken');
-      }
-
       queryClient.clear();
       toast.success('로그아웃 되었습니다.');
       router.push('/');
     },
 
     onError: () => {
-      // 로그아웃 실패해도 로컬 상태는 정리
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('accessToken');
-      }
       queryClient.clear();
       router.push('/');
     },
@@ -120,17 +106,9 @@ export function useRefreshToken() {
     mutationFn: () =>
       httpClient<AuthResponse>('/auth/refresh', { method: 'POST' }),
 
-    onSuccess: (response) => {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('accessToken', response.data.accessToken);
-      }
-    },
+    onSuccess: () => undefined,
 
     onError: () => {
-      // 리프레시 실패 시 로그아웃 처리
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('accessToken');
-      }
       queryClient.clear();
     },
   });

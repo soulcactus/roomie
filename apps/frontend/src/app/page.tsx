@@ -9,7 +9,7 @@ export default function Home() {
   useEffect(() => {
     const hasAccessToken =
       typeof window !== 'undefined' &&
-      Boolean(sessionStorage.getItem('accessToken'));
+      document.cookie.includes('access_token=');
 
     router.replace(hasAccessToken ? '/dashboard' : '/login');
   }, [router]);

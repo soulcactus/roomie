@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
+const ACCESS_TOKEN_COOKIE = 'access_token';
 type AuthRequest = {
   headers: Record<string, string | string[] | undefined>;
   ip?: string;
@@ -34,6 +35,14 @@ const COOKIE_OPTIONS = {
   sameSite: 'strict' as const,
   path: '/',
   maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+};
+
+const ACCESS_COOKIE_OPTIONS = {
+  httpOnly: false,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  maxAge: 15 * 60 * 1000, // 15 minutes
 };
 
 @ApiTags('Auth')
@@ -75,6 +84,7 @@ export class AuthController {
     );
 
     res.setCookie(REFRESH_TOKEN_COOKIE, refreshToken, COOKIE_OPTIONS);
+    res.setCookie(ACCESS_TOKEN_COOKIE, accessToken, ACCESS_COOKIE_OPTIONS);
 
     return { data: { accessToken } };
   }
@@ -109,6 +119,7 @@ export class AuthController {
     );
 
     res.setCookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, COOKIE_OPTIONS);
+    res.setCookie(ACCESS_TOKEN_COOKIE, tokens.accessToken, ACCESS_COOKIE_OPTIONS);
 
     return { data: { accessToken: tokens.accessToken } };
   }
@@ -128,6 +139,7 @@ export class AuthController {
     }
 
     res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
 
     return { data: { message: '로그아웃 되었습니다.' } };
   }
@@ -145,6 +157,7 @@ export class AuthController {
     await this.authService.logoutAll(userId);
 
     res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
 
     return { data: { message: '모든 기기에서 로그아웃 되었습니다.' } };
   }

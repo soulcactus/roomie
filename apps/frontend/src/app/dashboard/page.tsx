@@ -31,7 +31,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const hasAccessToken =
       typeof window !== 'undefined' &&
-      Boolean(sessionStorage.getItem('accessToken'));
+      document.cookie.includes('access_token=');
 
     if (!hasAccessToken) {
       router.replace('/login');
@@ -183,7 +183,7 @@ function DashboardContent() {
                 {/* 시간 라벨 헤더 */}
                 <div
                   className={cn(
-                    'sticky top-0 z-40 border-b bg-background/95 py-2',
+                    'sticky top-0 z-50 border-b bg-background/95 py-2',
                     isTimelineAtRightEdge
                       ? 'rounded-t-xl'
                       : 'rounded-tl-xl rounded-tr-none',

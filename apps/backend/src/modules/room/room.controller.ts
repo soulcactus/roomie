@@ -20,6 +20,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Rooms')
 @Controller('rooms')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
@@ -44,9 +46,8 @@ export class RoomController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '회의실 생성 (관리자 전용)' })
   async create(
     @Body() dto: CreateRoomDto,
@@ -56,9 +57,8 @@ export class RoomController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '회의실 수정 (관리자 전용)' })
   async update(
     @Param('id') id: string,
@@ -69,9 +69,8 @@ export class RoomController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '회의실 삭제 (관리자 전용)' })
   async delete(
     @Param('id') id: string,
