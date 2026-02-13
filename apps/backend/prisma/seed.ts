@@ -288,7 +288,7 @@ async function seedBookings() {
     '분기 OKR 점검',
     '협업 프로세스 점검',
   ];
-  const durations = [30, 45, 60, 75, 90, 120, 150, 180];
+  const durations = [30, 60, 90, 120, 150, 180];
 
   const bookings: Array<{
     roomId: string;
@@ -348,8 +348,8 @@ async function seedBookings() {
         for (let attempt = 0; attempt < 24; attempt += 1) {
           const hourCandidate =
             (dayIndex * 7 + roomIndex * 11 + slotIndex * 5 + attempt * 3) % 24;
-          const minuteOffset = [0, 15, 30, 45][
-            (dayIndex + roomIndex + slotIndex + attempt) % 4
+          const minuteOffset = [0, 30][
+            (dayIndex + roomIndex + slotIndex + attempt) % 2
           ];
           const startCandidate = hourCandidate * 60 + minuteOffset;
           if (startCandidate > maxStartMinute) continue;
