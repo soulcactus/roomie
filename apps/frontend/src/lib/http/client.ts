@@ -38,7 +38,6 @@ async function tryRefreshAccessToken() {
   refreshPromise = (async () => {
     const refreshRes = await fetch(toApiUrl(REFRESH_ENDPOINT), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
     return refreshRes.ok;
@@ -55,7 +54,6 @@ async function forceLogoutAndRedirect() {
   try {
     await fetch(toApiUrl(LOGOUT_ENDPOINT), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
   } catch {
@@ -86,7 +84,7 @@ export async function httpClient<T>(
     fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,
