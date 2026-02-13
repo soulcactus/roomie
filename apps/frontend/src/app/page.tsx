@@ -1,18 +1,10 @@
-'use client';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const hasAccessToken = Boolean(cookieStore.get('access_token')?.value);
 
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const hasAccessToken =
-      typeof window !== 'undefined' &&
-      document.cookie.includes('access_token=');
-
-    router.replace(hasAccessToken ? '/dashboard' : '/login');
-  }, [router]);
-
-  return null;
+  redirect(hasAccessToken ? '/dashboard' : '/login');
 }
+

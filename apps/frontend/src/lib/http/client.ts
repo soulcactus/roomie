@@ -1,6 +1,9 @@
 import { RequestConfig, ApiResponse, ApiErrorResponse } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const BASE_URL =
+  typeof window === 'undefined'
+    ? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+    : '';
 const API_PREFIX = '/api/v1';
 const REFRESH_ENDPOINT = '/auth/refresh';
 const LOGOUT_ENDPOINT = '/auth/logout';
@@ -23,11 +26,11 @@ function toApiUrl(endpoint: string) {
 }
 
 function isAuthRefreshRequest(url: string) {
-  return url.includes(`${API_PREFIX}${REFRESH_ENDPOINT}`);
+  return url.includes(REFRESH_ENDPOINT);
 }
 
 function isAuthLogoutRequest(url: string) {
-  return url.includes(`${API_PREFIX}${LOGOUT_ENDPOINT}`);
+  return url.includes(LOGOUT_ENDPOINT);
 }
 
 async function tryRefreshAccessToken() {

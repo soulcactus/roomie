@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { AppShell } from '@/components/dashboard/AppShell';
 import { getViewState, type ViewState } from '@/components/dashboard/format';
@@ -25,26 +25,6 @@ import {
 } from '@/components/dashboard/timeline';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-
-  useEffect(() => {
-    const hasAccessToken =
-      typeof window !== 'undefined' &&
-      document.cookie.includes('access_token=');
-
-    if (!hasAccessToken) {
-      router.replace('/login');
-      return;
-    }
-
-    setIsAuthChecked(true);
-  }, [router]);
-
-  if (!isAuthChecked) {
-    return null;
-  }
-
   return (
     <Suspense fallback={<DashboardSkeleton />}>
       <DashboardContent />
