@@ -26,7 +26,7 @@ export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
   @Get()
-  @ApiOperation({ summary: '회의실 목록 조회' })
+  @ApiOperation({ summary: '회의실 목록 조회 (인증 사용자)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async findAll(
@@ -40,7 +40,7 @@ export class RoomController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '회의실 상세 조회' })
+  @ApiOperation({ summary: '회의실 상세 조회 (인증 사용자)' })
   async findById(@Param('id') id: string) {
     return this.roomService.findById(id);
   }

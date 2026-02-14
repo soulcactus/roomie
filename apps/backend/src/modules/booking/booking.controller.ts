@@ -30,7 +30,7 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
-  @ApiOperation({ summary: '예약 생성' })
+  @ApiOperation({ summary: '예약 생성 (인증 사용자)' })
   @ApiResponse({ status: 201, description: '예약 생성 성공' })
   @ApiResponse({ status: 409, description: '시간 충돌로 인한 예약 실패' })
   async create(
@@ -41,7 +41,7 @@ export class BookingController {
   }
 
   @Get()
-  @ApiOperation({ summary: '예약 목록 조회' })
+  @ApiOperation({ summary: '예약 목록 조회 (인증 사용자)' })
   @ApiQuery({ name: 'roomId', required: false })
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'startDate', required: false, description: 'ISO 8601 형식' })
@@ -67,7 +67,7 @@ export class BookingController {
   }
 
   @Get('my')
-  @ApiOperation({ summary: '내 예약 목록 조회' })
+  @ApiOperation({ summary: '내 예약 목록 조회 (인증 사용자)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async findMyBookings(
@@ -83,7 +83,7 @@ export class BookingController {
   }
 
   @Get('room/:roomId')
-  @ApiOperation({ summary: '특정 회의실의 특정 날짜 예약 조회' })
+  @ApiOperation({ summary: '특정 회의실의 특정 날짜 예약 조회 (인증 사용자)' })
   @ApiQuery({ name: 'date', required: true, description: 'YYYY-MM-DD 형식' })
   async findByRoom(
     @Param('roomId') roomId: string,
@@ -93,13 +93,13 @@ export class BookingController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '예약 상세 조회' })
+  @ApiOperation({ summary: '예약 상세 조회 (인증 사용자)' })
   async findById(@Param('id') id: string) {
     return this.bookingService.findById(id);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: '예약 수정' })
+  @ApiOperation({ summary: '예약 수정 (인증 사용자)' })
   @ApiResponse({ status: 200, description: '예약 수정 성공' })
   @ApiResponse({ status: 409, description: '시간 충돌로 인한 수정 실패' })
   async update(
@@ -111,7 +111,7 @@ export class BookingController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: '예약 취소' })
+  @ApiOperation({ summary: '예약 취소 (인증 사용자)' })
   async cancel(
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,

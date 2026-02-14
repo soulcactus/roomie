@@ -14,7 +14,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  @ApiOperation({ summary: '내 정보 조회' })
+  @ApiOperation({ summary: '내 정보 조회 (인증 사용자)' })
   async getMe(@CurrentUser('sub') userId: string) {
     return this.userService.findById(userId);
   }
