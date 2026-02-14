@@ -1,5 +1,6 @@
 # Base
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
@@ -14,8 +15,7 @@ RUN pnpm install --frozen-lockfile
 FROM base AS development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-WORKDIR /app/apps/backend
-CMD ["pnpm", "dev"]
+CMD ["sh", "-c", "pnpm --filter backend exec prisma generate && pnpm --filter backend exec prisma db push && pnpm --filter backend dev"]
 
 # Builder
 FROM base AS builder
@@ -25,11 +25,11 @@ RUN pnpm --filter backend build
 RUN pnpm prune --prod
 
 # Production
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./
 EXPOSE 3001
 CMD ["node", "dist/main.js"]

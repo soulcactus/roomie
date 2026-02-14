@@ -25,7 +25,6 @@ services:
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./packages:/app/packages
-      - backend_node_modules:/app/node_modules
     ports:
       - "3001:3001"
     environment:
@@ -34,6 +33,10 @@ services:
       JWT_SECRET: dev-jwt-secret-change-in-production
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 14d
+      COOKIE_SECRET: dev-cookie-secret-change-in-production
+      FRONTEND_URL: http://localhost:3000
+      BACKEND_PORT: 3001
+      ENABLE_SWAGGER_UI: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,15 +50,13 @@ services:
     volumes:
       - ./apps/frontend:/app/apps/frontend
       - ./packages:/app/packages
-      - frontend_node_modules:/app/node_modules
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://backend:3001
+    command: ["pnpm", "dev", "-H", "0.0.0.0", "-p", "3000"]
     depends_on:
       - backend
 
 volumes:
   postgres_data:
-  backend_node_modules:
-  frontend_node_modules:
