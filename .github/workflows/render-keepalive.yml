@@ -2,7 +2,7 @@ name: Render Keepalive
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Ping Render API
         env:
-          KEEPALIVE_URL: ${{ secrets.RENDER_KEEPALIVE_URL || vars.RENDER_KEEPALIVE_URL }}
+          KEEPALIVE_URL: ${{ vars.RENDER_KEEPALIVE_URL }}
         run: |
           if [ -z "$KEEPALIVE_URL" ]; then
             echo "RENDER_KEEPALIVE_URL is missing. Skip keepalive."
