@@ -28,14 +28,18 @@ const USER_PROFILES: Array<{ email: string; name: string; team: Team }> = [
   { email: 'sujin@roomie.com', name: '윤수진', team: 'design' },
 ];
 
-async function seedAdmin() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@roomie.com';
-  const adminName = process.env.SEED_ADMIN_NAME ?? '관리자';
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
-
-  if (!adminPassword) {
-    throw new Error('SEED_ADMIN_PASSWORD 환경변수가 필요합니다.');
+function getRequiredSeedEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} 환경변수가 필요합니다.`);
   }
+  return value;
+}
+
+async function seedAdmin() {
+  const adminEmail = getRequiredSeedEnv('SEED_ADMIN_EMAIL');
+  const adminName = getRequiredSeedEnv('SEED_ADMIN_NAME');
+  const adminPassword = getRequiredSeedEnv('SEED_ADMIN_PASSWORD');
 
   const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
@@ -55,10 +59,7 @@ async function seedAdmin() {
 }
 
 async function seedUsers() {
-  const userPassword = process.env.SEED_USER_PASSWORD;
-  if (!userPassword) {
-    throw new Error('SEED_USER_PASSWORD 환경변수가 필요합니다.');
-  }
+  const userPassword = getRequiredSeedEnv('SEED_USER_PASSWORD');
 
   for (const user of USER_PROFILES) {
     const hashedPassword = await bcrypt.hash(userPassword, 12);
@@ -208,8 +209,10 @@ function createDailyDates(year: number, monthFrom: number, monthTo: number) {
 }
 
 async function seedBookings() {
-  const now = new Date();
-  const targetYear = Number(process.env.SEED_BOOKING_YEAR ?? now.getFullYear());
+  const targetYear = Number(getRequiredSeedEnv('SEED_BOOKING_YEAR'));
+  if (Number.isNaN(targetYear)) {
+    throw new Error('SEED_BOOKING_YEAR는 숫자여야 합니다.');
+  }
   const bookingDates = createDailyDates(targetYear, 2, 3); // 2월 ~ 3월
 
   const rooms = await prisma.room.findMany({

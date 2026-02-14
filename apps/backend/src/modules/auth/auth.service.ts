@@ -195,14 +195,19 @@ export class AuthService {
   }
 
   private getJwtSecret() {
-    return this.configService.get<string>(
-      'jwt.secret',
-      'default-secret-change-in-production',
-    );
+    const secret = this.configService.get<string>('jwt.secret');
+    if (!secret) {
+      throw new Error('JWT_SECRET 환경변수가 필요합니다.');
+    }
+    return secret;
   }
 
   private getRefreshExpiresIn() {
-    return this.configService.get<string>('jwt.refreshExpiresIn', '14d');
+    const refreshExpiresIn = this.configService.get<string>('jwt.refreshExpiresIn');
+    if (!refreshExpiresIn) {
+      throw new Error('JWT_REFRESH_EXPIRES_IN 환경변수가 필요합니다.');
+    }
+    return refreshExpiresIn;
   }
 
   private calculateExpiry(duration: string): Date {

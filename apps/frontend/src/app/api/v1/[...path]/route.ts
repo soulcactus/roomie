@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_BASE_URL =
-  process.env.BACKEND_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  'http://localhost:3001';
+function getRequiredBackendBaseUrl() {
+  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (publicApiUrl) {
+    return publicApiUrl;
+  }
+
+  throw new Error('NEXT_PUBLIC_API_URL 환경변수가 필요합니다.');
+}
+
+const BACKEND_BASE_URL = getRequiredBackendBaseUrl();
 
 function buildTargetUrl(path: string[], search: string) {
   const normalizedBase = BACKEND_BASE_URL.replace(/\/$/, '');

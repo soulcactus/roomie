@@ -9,30 +9,33 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyCors from '@fastify/cors';
 import { AppModule } from './app.module';
 
+function getRequiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} 환경변수가 필요합니다.`);
+  }
+  return value;
+}
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
   );
 
-  const defaultDevOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ];
-  const configuredOrigin = process.env.FRONTEND_URL;
-  const allowedOrigins = configuredOrigin
-    ? Array.from(new Set([configuredOrigin, ...defaultDevOrigins]))
-    : defaultDevOrigins;
+  const frontendUrl = getRequiredEnv('FRONTEND_URL');
+  const cookieSecret = getRequiredEnv('COOKIE_SECRET');
+  const backendPort = Number(getRequiredEnv('BACKEND_PORT'));
 
   // CORS 설정
   await app.register(fastifyCors, {
-    origin: allowedOrigins,
+    origin: [frontendUrl],
     credentials: true,
   });
 
   // Cookie 설정
   await app.register(fastifyCookie, {
-    secret: process.env.COOKIE_SECRET ?? 'cookie-secret',
+    secret: cookieSecret,
   });
 
   // 전역 Validation Pipe
@@ -47,23 +50,29 @@ async function bootstrap() {
   // API 접두사
   app.setGlobalPrefix('api/v1');
 
-  // Swagger 설정 (Fastify static 패키지 설치 전까지 비활성화 가능)
+  // Swagger 설정 (Fastify에서 @fastify/static 미설치 시 앱 부팅이 중단되지 않도록 보호)
   if (process.env.ENABLE_SWAGGER_UI === 'true') {
-    const config = new DocumentBuilder()
-      .setTitle('Roomie API')
-      .setDescription('회의실 예약 SaaS API')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('docs', app, document);
+    try {
+      const config = new DocumentBuilder()
+        .setTitle('Roomie API')
+        .setDescription('회의실 예약 SaaS API')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('docs', app, document);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `Swagger UI를 비활성화합니다. (@fastify/static 미설치 가능성) ${message}`,
+      );
+    }
   }
 
-  const port = process.env.BACKEND_PORT ?? 3001;
-  await app.listen(port, '0.0.0.0');
-  console.log(`Server running on http://localhost:${port}`);
+  await app.listen(backendPort, '0.0.0.0');
+  console.log(`Server running on http://localhost:${backendPort}`);
   if (process.env.ENABLE_SWAGGER_UI === 'true') {
-    console.log(`Swagger docs: http://localhost:${port}/docs`);
+    console.log(`Swagger docs: http://localhost:${backendPort}/docs`);
   }
 }
 

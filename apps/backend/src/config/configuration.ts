@@ -1,14 +1,22 @@
+function getRequiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} 환경변수가 필요합니다.`);
+  }
+  return value;
+}
+
 export default () => ({
   database: {
-    url: process.env.DATABASE_URL,
+    url: getRequiredEnv('DATABASE_URL'),
   },
   jwt: {
-    secret: process.env.JWT_SECRET,
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "15m",
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "14d",
+    secret: getRequiredEnv('JWT_SECRET'),
+    accessExpiresIn: getRequiredEnv('JWT_ACCESS_EXPIRES_IN'),
+    refreshExpiresIn: getRequiredEnv('JWT_REFRESH_EXPIRES_IN'),
   },
   server: {
-    port: parseInt(process.env.BACKEND_PORT ?? "3001", 10),
-    frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    port: parseInt(getRequiredEnv('BACKEND_PORT'), 10),
+    frontendUrl: getRequiredEnv('FRONTEND_URL'),
   },
 });

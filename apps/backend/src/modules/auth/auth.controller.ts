@@ -19,7 +19,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const ACCESS_TOKEN_COOKIE = 'access_token';
 const IS_PROD = process.env.NODE_ENV === 'production';
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
 const COOKIE_SAME_SITE: 'lax' | 'none' = IS_PROD ? 'none' : 'lax';
 type AuthRequest = {
   headers: Record<string, string | string[] | undefined>;
@@ -41,7 +40,6 @@ const COOKIE_OPTIONS = {
   secure: IS_PROD,
   sameSite: COOKIE_SAME_SITE,
   path: '/',
-  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
 };
 
@@ -50,7 +48,6 @@ const ACCESS_COOKIE_OPTIONS = {
   secure: IS_PROD,
   sameSite: COOKIE_SAME_SITE,
   path: '/',
-  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   maxAge: 15 * 60 * 1000, // 15 minutes
 };
 
@@ -58,7 +55,6 @@ const CLEAR_COOKIE_BASE = {
   secure: IS_PROD,
   sameSite: COOKIE_SAME_SITE,
   path: '/',
-  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   expires: new Date(0),
 };
 
@@ -67,29 +63,25 @@ function expireCookieAllVariants(
   cookieName: string,
   httpOnly: boolean,
 ) {
-  const domains = COOKIE_DOMAIN ? [undefined, COOKIE_DOMAIN] : [undefined];
   const sameSites: Array<'lax' | 'strict' | 'none'> = ['lax', 'strict', 'none'];
   const secures = [false, true];
 
-  for (const domain of domains) {
-    for (const sameSite of sameSites) {
-      for (const secure of secures) {
-        // sameSite=none은 secure=true여야 브라우저가 수용
-        if (sameSite === 'none' && !secure) continue;
+  for (const sameSite of sameSites) {
+    for (const secure of secures) {
+      // sameSite=none은 secure=true여야 브라우저가 수용
+      if (sameSite === 'none' && !secure) continue;
 
-        const options = {
-          path: '/',
-          httpOnly,
-          sameSite,
-          secure,
-          expires: new Date(0),
-          maxAge: 0,
-          ...(domain ? { domain } : {}),
-        };
+      const options = {
+        path: '/',
+        httpOnly,
+        sameSite,
+        secure,
+        expires: new Date(0),
+        maxAge: 0,
+      };
 
-        res.clearCookie(cookieName, options);
-        res.setCookie(cookieName, '', options);
-      }
+      res.clearCookie(cookieName, options);
+      res.setCookie(cookieName, '', options);
     }
   }
 }
@@ -216,7 +208,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '모든 세션 로그아웃' })
+  @ApiOperation({ summary: '모든 세션 로그아웃 (인증 사용자)' })
   @ApiResponse({ status: 200, description: '모든 세션 로그아웃 성공' })
   async logoutAll(
     @CurrentUser('sub') userId: string,

@@ -1,8 +1,16 @@
 import { RequestConfig, ApiResponse, ApiErrorResponse } from './types';
 
+function getRequiredEnv(name: 'NEXT_PUBLIC_API_URL') {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} 환경변수가 필요합니다.`);
+  }
+  return value;
+}
+
 const BASE_URL =
   typeof window === 'undefined'
-    ? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+    ? getRequiredEnv('NEXT_PUBLIC_API_URL')
     : '';
 const API_PREFIX = '/api/v1';
 const REFRESH_ENDPOINT = '/auth/refresh';
