@@ -38,6 +38,3 @@ apps/backend/prisma/*.db-journal
 
 # Docker
 postgres_data/
-
-# Docs (temporary)
-CLAUDE.md
