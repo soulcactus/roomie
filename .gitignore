@@ -40,5 +40,4 @@ apps/backend/prisma/*.db-journal
 postgres_data/
 
 # Docs (temporary)
-README.md
 CLAUDE.md
