@@ -18,15 +18,34 @@ jobs:
             exit 0
           fi
 
-          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
-            --connect-timeout 10 \
-            --max-time 20 \
-            "$KEEPALIVE_URL")
+          ATTEMPTS=3
+          SLEEP_SECONDS=10
+          CONNECT_TIMEOUT=15
+          MAX_TIME=60
+          LAST_CODE=000
 
-          echo "HTTP status: $HTTP_CODE"
+          for i in $(seq 1 "$ATTEMPTS"); do
+            echo "Attempt $i/$ATTEMPTS"
 
-          # 5xx만 실패로 간주 (401/404도 서버 기동 확인 목적상 성공 처리)
-          if [ "$HTTP_CODE" -ge 500 ]; then
-            echo "Server responded with 5xx"
-            exit 1
-          fi
+            HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+              --connect-timeout "$CONNECT_TIMEOUT" \
+              --max-time "$MAX_TIME" \
+              "$KEEPALIVE_URL" || echo "000")
+
+            LAST_CODE="$HTTP_CODE"
+            echo "HTTP status: $HTTP_CODE"
+
+            # keepalive 목적상 5xx만 실패 대상, 그 외(2xx/3xx/4xx)는 성공 처리
+            if [ "$HTTP_CODE" -lt 500 ] && [ "$HTTP_CODE" -ne 000 ]; then
+              echo "Keepalive success"
+              exit 0
+            fi
+
+            if [ "$i" -lt "$ATTEMPTS" ]; then
+              echo "Retry after ${SLEEP_SECONDS}s..."
+              sleep "$SLEEP_SECONDS"
+            fi
+          done
+
+          echo "Keepalive failed after retries. Last status: $LAST_CODE"
+          exit 1
